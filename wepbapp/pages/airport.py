@@ -2,73 +2,94 @@ import streamlit as st
 import pandas as pd
 import seaborn as sns
 import matplotlib.pyplot as plt
+from utils.database import Database 
 
-# Configuration de la page
 st.set_page_config(page_title="Statistiques sur les aéroports", layout="wide")
+ 
+@st.cache_resource
+def get_db_connection():
+    try:
+        db = Database()
+        return db
+    except Exception as e:
+        st.error(f"Erreur de connexion à la base de données : {e}")
+        return None
+ 
+@st.cache_data
+def load_airport_data(_db):
+    if _db:
+        try:
+            query = """
+            SELECT faa, name, lat, lon, alt, tz, dst, tzone
+            FROM airports
+            """
+            data = _db.fetch_all(query)
+            df = pd.DataFrame(data, columns=['faa', 'name', 'lat', 'lon', 'alt', 'tz', 'dst', 'tzone'])
+            return df
+        except Exception as e:
+            st.error(f"Erreur lors de la récupération des données : {e}")
+            return pd.DataFrame()
+    else:
+        st.error("Connexion à la base de données non disponible.")
+        return pd.DataFrame()
+ 
+db = get_db_connection()
+ 
+airport_data = load_airport_data(db)
+ 
+# Section 1 : Affichage général des données des aéroports
+st.subheader("Informations générales sur les aéroports")
+ 
+if not airport_data.empty:
+    st.write(f"Nombre total d'aéroports dans la base de données : {airport_data.shape[0]}")
+    st.write("Voici les 10 premiers aéroports enregistrés :")
+    st.dataframe(airport_data.head(10))
+else:
+    st.write("Aucune donnée disponible pour les aéroports.")
+ 
+# Section 2 : Indicateurs de performance (KPI)
+st.subheader("Indicateurs de performance clés pour les aéroports")
+ 
+if not airport_data.empty:
+    total_timezones = airport_data['tz'].nunique()
+ 
+    highest_altitude_airport = airport_data.loc[airport_data['alt'].idxmax(), 'name']
+    highest_altitude_value = airport_data['alt'].max()
+ 
+    lowest_altitude_airport = airport_data.loc[airport_data['alt'].idxmin(), 'name']
+    lowest_altitude_value = airport_data['alt'].min()
+ 
+    col1, col2, col3 = st.columns(3)
+    col1.metric("Nombre total de fuseaux horaires", total_timezones)
+    col2.metric(f"Aéroport avec la plus grande altitude", highest_altitude_airport, f"{highest_altitude_value} pieds")
+    col3.metric(f"Aéroport avec la plus faible altitude", lowest_altitude_airport, f"{lowest_altitude_value} pieds")
+else:
+    st.write("Pas assez de données pour afficher les indicateurs de performance.")
+ 
+# Section 3 : Top 10 des aéroports par fuseau horaire
+st.subheader("Top 10 des fuseaux horaires les plus populaires")
+ 
+if not airport_data.empty:
+    top_10_timezones = airport_data['tz'].value_counts().head(10)
+ 
+    st.write("### Fuseaux horaires avec le plus d'aéroports")
+    st.dataframe(top_10_timezones)
+else:
+    st.write("Aucune donnée de fuseau horaire disponible.")
+ 
+# Section 4 : Carte des aéroports
+st.subheader("Localisation géographique des aéroports")
+ 
+if not airport_data.empty and 'lat' in airport_data.columns and 'lon' in airport_data.columns:
+    st.map(airport_data[['lat', 'lon']])
+else:
+    st.write("Aucune donnée de localisation disponible.")
+ 
 
-# Titre et introduction
-st.title("Statistiques sur les aéroports")
-st.write("Analyse des statistiques des aéroports d'origine et de destination.")
-
-# Exemple de données de vols (à remplacer par des données réelles)
-data = pd.DataFrame({
-    'origin_airport': ['JFK', 'LAX', 'SFO', 'ORD', 'MIA', 'JFK', 'LAX', 'SFO', 'ORD', 'MIA'],
-    'dest_airport': ['LAX', 'JFK', 'MIA', 'SFO', 'ORD', 'LAX', 'JFK', 'MIA', 'SFO', 'ORD'],
-    'company': ['United', 'American', 'Delta', 'Southwest', 'United', 'Delta', 'American', 'United', 'Southwest', 'Delta'],
-    'flights': [150, 120, 110, 90, 80, 100, 130, 115, 85, 95],
-    'month': ['2024-01', '2024-01', '2024-01', '2024-01', '2024-01', '2024-02', '2024-02', '2024-02', '2024-02', '2024-02'],
-    'origin_airport_full': ['John F. Kennedy International', 'Los Angeles International', 'San Francisco International', 'O\'Hare International', 'Miami International',
-                            'John F. Kennedy International', 'Los Angeles International', 'San Francisco International', 'O\'Hare International', 'Miami International'],
-    'dest_airport_full': ['Los Angeles International', 'John F. Kennedy International', 'Miami International', 'San Francisco International', 'O\'Hare International',
-                          'Los Angeles International', 'John F. Kennedy International', 'Miami International', 'San Francisco International', 'O\'Hare International']
-})
-
-# Section 1 : Indicateurs de performance (KPI)
-st.subheader("Indicateurs de performance clés")
-
-# Nombre total d'aéroports de départ et de destination
-total_origin_airports = data['origin_airport'].nunique()
-total_dest_airports = data['dest_airport'].nunique()
-
-# Aéroport de départ le plus emprunté
-most_used_origin_airport = data.groupby('origin_airport_full')['flights'].sum().idxmax()
-most_used_origin_airport_flights = data.groupby('origin_airport_full')['flights'].sum().max()
-
-# Affichage des KPI en colonnes
-col1, col2, col3 = st.columns(3)
-col1.metric("Nombre total d'aéroports de départ", total_origin_airports)
-col2.metric("Nombre total d'aéroports de destination", total_dest_airports)
-col3.metric(f"Aéroport le plus emprunté", most_used_origin_airport, f"{most_used_origin_airport_flights} vols")
-
-# Section 2 : Top 10 des destinations les plus/moins populaires
-st.subheader("Top 10 des destinations les plus et les moins populaires")
-
-# Calcul des top 10 destinations
-top_10_destinations = data.groupby('dest_airport_full')['flights'].sum().sort_values(ascending=False).head(10)
-bottom_10_destinations = data.groupby('dest_airport_full')['flights'].sum().sort_values(ascending=True).head(10)
-
-# Affichage des destinations les plus populaires
-col1, col2 = st.columns(2)
-
-with col1:
-    st.write("### Top 10 des destinations les plus populaires")
-    st.dataframe(top_10_destinations)
-
-with col2:
-    st.write("### Top 10 des destinations les moins populaires")
-    st.dataframe(bottom_10_destinations)
-
-# Section 3 : Visualisation de l'évolution du trafic par aéroport
-st.subheader("Évolution du trafic par aéroport (comparaison mensuelle)")
-
-# Calcul de la somme des vols par mois pour chaque aéroport de départ
-traffic_evolution = data.groupby(['month', 'origin_airport_full'])['flights'].sum().reset_index()
-
-# Visualisation avec Seaborn
-plt.figure(figsize=(10, 6))
-sns.lineplot(data=traffic_evolution, x='month', y='flights', hue='origin_airport_full', marker='o')
-plt.title("Évolution du trafic par aéroport d'origine")
-plt.xlabel("Mois")
-plt.ylabel("Nombre de vols")
-plt.xticks(rotation=45)
-st.pyplot(plt)
+if not airport_data.empty:
+    dst_count = airport_data['dst'].value_counts()
+ 
+    st.write("### Nombre d'aéroports par type de DST")
+    st.bar_chart(dst_count)
+else:
+    st.write("Aucune donnée DST disponible.")

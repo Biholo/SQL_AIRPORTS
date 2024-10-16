@@ -23,16 +23,16 @@ try:
     retards_moyens = db.fetch_all("SELECT AVG(dep_delay) FROM flights WHERE dep_delay IS NOT NULL")[0][0]
 
     destinations_top = db.fetch_all("""
-    SELECT a.name AS airport_name, f.dest, d.count
-    FROM (
-        SELECT dest, COUNT(*) AS count
-        FROM flights
-        GROUP BY dest
-        ORDER BY count DESC 
-        LIMIT 5
-    ) d
-    JOIN airports a ON d.dest = a.faa
-""")
+        SELECT a.name AS airport_name, f.dest, d.count
+        FROM (
+            SELECT dest, COUNT(*) AS count
+            FROM flights
+            GROUP BY dest
+            ORDER BY count DESC 
+            LIMIT 5
+        ) d
+        JOIN airports a ON d.dest = a.faa
+    """)
 
 
 
