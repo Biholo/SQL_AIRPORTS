@@ -2,6 +2,8 @@ import streamlit as st
 import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
+from utils.database import Database
+
 
 # Configuration de la page
 st.set_page_config(page_title="Statistiques sur les compagnies aériennes", layout="wide")
@@ -10,7 +12,11 @@ st.set_page_config(page_title="Statistiques sur les compagnies aériennes", layo
 st.title("Statistiques sur les compagnies aériennes")
 st.write("Analyse des performances des compagnies aériennes en termes de vols et de destinations desservies.")
 
-# Exemple de données simulées (à remplacer par des données réelles)
+db = Database()
+data = db.fetch_all("SELECT * FROM airlines")
+data
+
+""""
 data = pd.DataFrame({
     'company': ['United', 'American', 'Delta', 'Southwest', 'United', 'American', 'Delta', 'Southwest'] * 50,
     'destinations': [25, 30, 20, 22, 26, 31, 21, 23] * 50,
@@ -19,6 +25,7 @@ data = pd.DataFrame({
     'cancellations': [3, 2, 4, 1, 2, 3, 2, 1] * 50,
     'month': ['2024-01', '2024-01', '2024-01', '2024-01', '2024-02', '2024-02', '2024-02', '2024-02'] * 50
 })
+"""
 
 # Initialiser le nombre de lignes à afficher dans session_state
 if 'num_rows' not in st.session_state:
