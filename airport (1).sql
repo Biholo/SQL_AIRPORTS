@@ -31,7 +31,9 @@ DROP TABLE IF EXISTS `airlines`;
 CREATE TABLE IF NOT EXISTS `airlines` (
   `carrier` char(2) NOT NULL,
   `name` varchar(255) DEFAULT NULL,
-  PRIMARY KEY (`carrier`)
+  `faa` varchar(255) DEFAULT NULL,
+  PRIMARY KEY (`carrier`),
+  KEY `faa` (`faa`)
 ) ENGINE=MyISAM DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 -- --------------------------------------------------------
@@ -52,6 +54,28 @@ CREATE TABLE IF NOT EXISTS `airports` (
   `tzone` varchar(255) DEFAULT NULL,
   PRIMARY KEY (`faa`)
 ) ENGINE=MyISAM DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+
+
+DROP TABLE IF EXISTS `weathers`;
+CREATE TABLE IF NOT EXISTS `weathers` (
+  `origin` CHAR(3) NOT NULL,
+  `year` INT NOT NULL,
+  `month` INT NOT NULL,
+  `day` INT NOT NULL,
+  `hour` INT NOT NULL,
+  `temp` FLOAT DEFAULT NULL,
+  `dewp` FLOAT DEFAULT NULL,
+  `humid` FLOAT DEFAULT NULL,
+  `wind_dir` INT DEFAULT NULL,
+  `wind_speed` FLOAT DEFAULT NULL,
+  `wind_gust` FLOAT DEFAULT NULL,
+  `precip` FLOAT DEFAULT NULL,
+  `pressure` FLOAT DEFAULT NULL,
+  `visib` FLOAT DEFAULT NULL,
+  `time_hour` VARCHAR(255) DEFAULT NULL,
+  PRIMARY KEY (`origin`, `year`, `month`, `day`, `hour`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 -- --------------------------------------------------------
 
