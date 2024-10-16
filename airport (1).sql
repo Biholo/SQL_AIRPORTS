@@ -33,7 +33,7 @@ CREATE TABLE IF NOT EXISTS `airlines` (
   `name` varchar(255) DEFAULT NULL,
   `faa` varchar(255) DEFAULT NULL,
   PRIMARY KEY (`carrier`),
-  KEY `faa` (`faa`)
+  FOREIGN KEY (`faa`) REFERENCES `airports` (`faa`)
 ) ENGINE=MyISAM DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 -- --------------------------------------------------------
@@ -74,7 +74,9 @@ CREATE TABLE IF NOT EXISTS `weathers` (
   `pressure` FLOAT DEFAULT NULL,
   `visib` FLOAT DEFAULT NULL,
   `time_hour` VARCHAR(255) DEFAULT NULL,
-  PRIMARY KEY (`origin`, `year`, `month`, `day`, `hour`)
+  PRIMARY KEY (`origin`, `year`, `month`, `day`, `hour`),
+  FOREIGN KEY (`origin`) REFERENCES `airports` (`faa`),
+  FOREIGN KEY (`dest`) REFERENCES `airports` (`faa`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 -- --------------------------------------------------------
@@ -106,10 +108,10 @@ CREATE TABLE IF NOT EXISTS `flights` (
   `minute` int DEFAULT NULL,
   `time_hour` varchar(255) DEFAULT NULL,
   PRIMARY KEY (`id`),
-  KEY `carrier` (`carrier`),
-  KEY `tailnum` (`tailnum`),
-  KEY `origin` (`origin`),
-  KEY `dest` (`dest`)
+  FOREIGN KEY (`carrier`) REFERENCES `airlines` (`carrier`),
+  FOREIGN KEY (`tailnum`) REFERENCES `planes` (`tailnum`),
+  FOREIGN KEY (`origin`) REFERENCES `airports` (`faa`),
+  FOREIGN KEY (`dest`) REFERENCES `airports` (`faa`)
 ) ENGINE=MyISAM DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 -- --------------------------------------------------------
