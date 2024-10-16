@@ -2,6 +2,7 @@ import streamlit as st
 import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
+from utils.database import Database
 
 # Configuration de la page
 st.set_page_config(page_title="Dashboard Trafic Aérien", layout="wide")
@@ -10,31 +11,58 @@ st.set_page_config(page_title="Dashboard Trafic Aérien", layout="wide")
 st.title("Tableau de bord du trafic aérien")
 st.write("Bienvenue sur le tableau de bord interactif du trafic aérien.")
 
-# Exemple de données simulées pour les KPI
-data = {
-    "vols_total": 12000,
-    "aeroports_total": 400,
-    "compagnies_total": 150,
-    "vols_annules": 300,
-    "retards_moyens": 45,  # en minutes
-    "destinations_top": ["Paris", "New York", "Londres", "Tokyo", "Dubaï"]
-}
+# Créer une instance de la classe Database
+db = Database()
+
+# Récupérer les données réelles depuis la base de données
+try:
+    vols_total = db.fetch_all("SELECT COUNT(*) FROM flights")[0][0]
+    aeroports_total = db.fetch_all("SELECT COUNT(*) FROM airports")[0][0]
+    compagnies_total = db.fetch_all("SELECT COUNT(*) FROM airlines")[0][0]
+    vols_annules = db.fetch_all("SELECT COUNT(*) FROM flights WHERE dep_time = ''")[0][0]
+    retards_moyens = db.fetch_all("SELECT AVG(dep_delay) FROM flights WHERE dep_delay IS NOT NULL")[0][0]
+
+    destinations_top = db.fetch_all("""
+    SELECT a.name AS airport_name, f.dest, d.count
+    FROM (
+        SELECT dest, COUNT(*) AS count
+        FROM flights
+        GROUP BY dest
+        ORDER BY count DESC 
+        LIMIT 5
+    ) d
+    JOIN airports a ON d.dest = a.faa
+""")
+
+
+
+    print('Vols total', vols_total)
+    print('Aeroport total', aeroports_total)
+    print('Companies total', compagnies_total)
+    print('Vols annulée',vols_annules)
+    print('Retard moyen',retards_moyens)
+    print('top destination:', destinations_top)
+
+    destinations_top = [d[0] for d in destinations_top]
+except Exception as e:
+    st.error(f"Erreur lors de la récupération des données : {e}")
+    vols_total, aeroports_total, compagnies_total, vols_annules, retards_moyens, destinations_top = 0, 0, 0, 0, 0, []
 
 # Section 1 : Affichage des KPI
 st.subheader("Indicateurs de performance clés")
 
 col1, col2, col3 = st.columns(3)
-col1.metric("Nombre total de vols", data['vols_total'])
-col2.metric("Nombre total d'aéroports", data['aeroports_total'])
-col3.metric("Nombre total de compagnies", data['compagnies_total'])
+col1.metric("Nombre total de vols", vols_total)
+col2.metric("Nombre total d'aéroports", aeroports_total)
+col3.metric("Nombre total de compagnies", compagnies_total)
 
 col4, col5 = st.columns(2)
-col4.metric("Vols annulés", data['vols_annules'])
-col5.metric("Retard moyen (minutes)", data['retards_moyens'])
+col4.metric("Vols annulés", vols_annules)
+col5.metric("Retard moyen (minutes) (quand il y a retard)", float(round(retards_moyens, 2)))
 
 # Section 2 : Destinations les plus fréquentées
 st.subheader("Top 5 des destinations les plus fréquentées")
-st.write(", ".join(data['destinations_top']))
+st.write(", ".join(destinations_top))
 
 # Section 3 : Graphiques d'évolution du trafic
 st.subheader("Évolution du trafic aérien")
@@ -54,7 +82,7 @@ plt.title("Évolution du trafic aérien (2023)", fontsize=14)
 # Affichage du graphique dans Streamlit
 st.pyplot(fig)
 
-# Si tu veux ajouter plus de graphiques pour différentes périodes
+# Trafic annuel
 st.subheader("Trafic aérien par année")
 traffic_annual = pd.DataFrame({
     "Année": ["2020", "2021", "2022", "2023"],
